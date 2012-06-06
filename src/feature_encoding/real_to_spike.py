@@ -57,7 +57,33 @@ class RealToSpikes(object):
         return spikes a sparse array of size (an n*num_RFs, t)
         '''
         r = self.RFs.response(v)
-        pass
+        print r
+        spike_times = self.linear_spike_times(r, t)
+        
+        return spike_times
+    
+    def linear_spike_times(self, rf_exc, t_len, min_exc=.2):
+        '''
+        take an array of RF response values (e.g. firing rates)
+        and return a vector of spike times.  These are spread out linearly,
+        the high RF values spike first, the lower ones later.  Must have min_exc
+        firing rate/exciting to spike at all
+        '''
+        m = float(t_len)/(min_exc - 1.0)
+        b = t_len - m * min_exc
+        spike_times = m * rf_exc + b
+
+        return spike_times
+    
+    def spike_raster(self, times, max_time):
+        '''raster plot of spike times'''
+        pl.figure()
+        times = times.flatten()
+        for i in range(times.shape[0]):
+            if times[i] <= max_time:
+                pl.plot(times[i],i,'.',color='b')
+        pl.xlim([0,max_time])
+        pl.ylim([0,times.shape[0]])
 
 
 class ReceptiveFields(object):
@@ -91,9 +117,9 @@ class ReceptiveFields(object):
         
         returns a (n,self.num_RFs) array
         '''
-        return np.exp( -((x - C).T / w ) ** 2).T
+        return np.exp( -((x - C).T / w ) ** 2.0).T
     
-    def spread(self, data, beta=1.5):
+    def spread(self, data, beta=1.0):
         '''
         beta -- an overlap parameter.  somewhere in [1.0,2.0]
         supposedly works well
@@ -114,19 +140,23 @@ class ReceptiveFields(object):
         '''
         remember to run pl.show()
         '''
+        pl.figure()
         C,w = self.C[row,:], self.w[row]
         min,max = np.min(C)-2*w, np.max(C)+2*w
         x = np.arange(min,max,(max-min)/num_pts)
         print min,max
-        R = self.response(x,C[...,None],w)
+        R = self.gaussian_field(x,C[...,None],w)
         for i in range(R.shape[0]):
             pl.plot(x, R[i,:])
 
 
 if __name__ == '__main__':
-    data = np.array([100*np.random.rand(1000), 10*np.random.rand(1000)])
-    
-    RF = ReceptiveFields(data,7)
-
-    print RF.response(np.array([1,2])).shape
+    R = RealToSpikes(10*np.random.rand(1,1000),5)
+    R.RFs.plot_rfs()
+    input = np.array([9])
+    print input
+    spikes = R.spikes(input,5.0)
+    print spikes
+    R.spike_raster(spikes,5.0)
+    pl.show()
 
