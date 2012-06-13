@@ -48,42 +48,57 @@ class RealToSpikes(object):
         '''
         self.num_RFs = num_RFs
         self.RFs = ReceptiveFields(data, num_RFs)
+        self.n,self.m = data.shape
         
-    def spikes(self, v, t):
+    def spikes(self, v, t, min_exc=.2):
         '''
-        v is a 1-d numpy array
-        t is the time window length to produce spikes
+        v is a 1-d numpy array -- a real-valued input vector
+        describing sensory input to a system to be converted into
+        neuron spikes spread across a time window 't'.
         
-        return spikes a sparse array of size (an n*num_RFs, t)
+        t is the time window length to produce spikes across,
+        lower receptive field values spike later, or not at all.
+        
+        min_exc in [0,1] is the minimum excitation/activation
+        of a receptive field in order to register a spike.
+        
+        returns [(neuron_number,spike_time),...]
         '''
         r = self.RFs.response(v)
-        print r
-        spike_times = self.linear_spike_times(r, t)
-        
-        return spike_times
-    
-    def linear_spike_times(self, rf_exc, t_len, min_exc=.2):
-        '''
-        take an array of RF response values (e.g. firing rates)
-        and return a vector of spike times.  These are spread out linearly,
-        the high RF values spike first, the lower ones later.  Must have min_exc
-        firing rate/exciting to spike at all
-        '''
-        m = float(t_len)/(min_exc - 1.0)
-        b = t_len - m * min_exc
-        spike_times = m * rf_exc + b
+        spike_times = self.linear_spike_times(r, t, min_exc)
 
         return spike_times
     
-    def spike_raster(self, times, max_time):
+    def linear_spike_times(self, rf, t, min_exc):
+        '''
+        take a numpy array of size (n,self.num_RFs) (n is the len of the
+        real valued input vector to be converted to spike times) of RF
+        response values and return an array of spike times.
+        
+        These spike times are spread out linearly across t, the high
+        RF values spike first, the lower ones later.  In order to spike
+        these neurons must meet a minimum excitation (i.e. firing rate)
+        threshold.
+        '''
+        m = float(t)/(min_exc - 1.0)
+        b = t - m * min_exc
+        spike_times = m * rf + b
+        
+        s = spike_times.flatten()
+        n = np.nonzero(s<=t)[0] # neuron numbers of spikes before t
+        t = s[n] # times of spikes for neurons in n
+
+        return zip(n,t)
+    
+    def spike_raster(self, times):
         '''raster plot of spike times'''
         pl.figure()
-        times = times.flatten()
-        for i in range(times.shape[0]):
-            if times[i] <= max_time:
-                pl.plot(times[i],i,'.',color='b')
-        pl.xlim([0,max_time])
-        pl.ylim([0,times.shape[0]])
+        for neuron,time in times:
+            pl.plot(time,neuron,'o',color='b')
+        pl.ylim([0,self.n*self.num_RFs])
+        pl.xlabel('Time')
+        pl.ylabel('Neuron Number')
+        pl.title('Spike times - Raster plot')
 
 
 class ReceptiveFields(object):
@@ -144,19 +159,21 @@ class ReceptiveFields(object):
         C,w = self.C[row,:], self.w[row]
         min,max = np.min(C)-2*w, np.max(C)+2*w
         x = np.arange(min,max,(max-min)/num_pts)
-        print min,max
         R = self.gaussian_field(x,C[...,None],w)
         for i in range(R.shape[0]):
             pl.plot(x, R[i,:])
+        pl.title('Receptive fields for row %s of input vector' % row)
+        pl.ylabel('Receptive Field Value')
+        pl.xlabel('Input Value')
 
 
 if __name__ == '__main__':
-    R = RealToSpikes(10*np.random.rand(1,1000),5)
+    R = RealToSpikes(10*np.random.rand(2,1000),7)
     R.RFs.plot_rfs()
-    input = np.array([9])
+    input = np.array([9,2])
     print input
     spikes = R.spikes(input,5.0)
     print spikes
-    R.spike_raster(spikes,5.0)
+    R.spike_raster(spikes)
     pl.show()
 
