@@ -7,7 +7,7 @@ Izhikevich - 2003 - Simple Model of Spiking Neurons
 from brian.library.IF import *
 from brian.neurongroup import *
 from brian import *
-from brian_utils import IzhikevichReset
+from utils import IzhikevichReset
 import time
 
 defaultclock.dt = .5*ms

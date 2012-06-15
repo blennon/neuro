@@ -4,7 +4,7 @@ This will model and plot a set of Izhikevich neuron models
 from brian.library.IF import *
 from brian.neurongroup import *
 from brian import *
-from brian_utils import IzhikevichReset
+from utils import IzhikevichReset
         
 def plot_Izhikevich(name,a,b,c,d):
     a,b,c,d = a/ms, b/ms, c*mV, d*mV/ms

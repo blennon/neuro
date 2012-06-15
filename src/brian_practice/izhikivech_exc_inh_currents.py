@@ -4,7 +4,7 @@ currents with different time constants to an Izhikevich neuron
 '''
 from brian.neurongroup import * # for some reason Eclipse likes this
 from brian import *
-from brian_utils import IzhikevichReset
+from utils import IzhikevichReset
 
 ########################################################################
 # Network Parameters
