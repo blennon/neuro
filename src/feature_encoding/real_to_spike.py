@@ -103,26 +103,54 @@ class RealToSpikes(object):
 
 class ReceptiveFields(object):
     '''
-    This class will produce receptive fields
+    This class will create receptive fields for real-valued data 
+    and produce a response for a particular input
     '''
     
-    def __init__(self, data, num_RFs):
+    def __init__(self, num_RFs, data=None, online=False):
         '''
+        num_RFs -- number of receptive fields to encode data in
+        
         data -- a numpy 2-d array of the data or significant sample,
         size (num_features,num-samples)
-        num_RFs -- number of receptive fields to encode data in
+        
+        If data is None, assumes that the receptive field locations will
+        be determined in an online manner, i.e. every time a new input is
+        received, the RF array will be adjust to spread out maximally over all
+        of the data that's been seen so far.
         '''
         self.num_RFs = num_RFs
-        self.C, self.w = self.spread(data)
+        if data is not None:
+            self.min,self.max = np.min(data,axis=1), np.max(data,axis=1)
+            self.spread_RFs()
+            self.online = online
+        else:
+            self.online = True
+            self.init = False
+            print 'Waiting for first two inputs to initialize Receptive Fields...'
     
-    def parameters(self):
+    def get_parameters(self):
         return self.C, self.w
-           
-    def response(self, x):
+    
+    def new_max_min(self, input):
+        '''calculate the new min,max values of the data seen so far'''
+        if not self.init:
+            self.min, self.max = input, input.copy()
+            self.init = True
+            return
+        self.max[self.max<input] = input[self.max<input]
+        self.min[input<self.min] = input[input<self.min]
+        
+    def response(self, input):
         '''
-        x is an (n,) array
+        input is an (n,) array to be converted into receptive field
+        response values
         '''
-        return self.gaussian_field(x[...,None], self.C, self.w)
+        if self.online:
+            self.new_max_min(input)
+            self.spread_RFs()
+            
+        return self.gaussian_field(input[...,None], self.C, self.w)
     
     def gaussian_field(self, x, C, w):
         '''
@@ -132,24 +160,25 @@ class ReceptiveFields(object):
         
         returns a (n,self.num_RFs) array
         '''
+        if np.array_equal(w, np.zeros_like(w)):
+            return np.zeros_like(C)
+        
         return np.exp( -((x - C).T / w ) ** 2.0).T
     
-    def spread(self, data, beta=1.0):
+    def spread_RFs(self, beta=1.0):
         '''
         beta -- an overlap parameter.  somewhere in [1.0,2.0]
         supposedly works well
         
-        return parameter vectors for the 'self.num_RFs' number
+        set parameter vectors for the 'self.num_RFs' number
         of receptive fields as two arrays.
         
         this spreads the RFs evenly over the range [min,max]
         '''
         N = self.num_RFs
-        min,max = np.min(data,axis=1), np.max(data,axis=1)
-        C = np.array([min + (2*(i+1)-3)/2. * (max-min)/(N-2.) for i in range(N)]).T
-        w = 1/beta * (max-min)/(N-2.)
-        
-        return C, w
+        C = np.array([self.min + (2*(i+1)-3)/2. * (self.max-self.min)/(N-2.) for i in range(N)]).T
+        w = 1/beta * (self.max-self.min)/(N-2.)
+        self.C, self.w = C, w
 
     def plot_rfs(self, row=0, num_pts=1000):
         '''
@@ -168,6 +197,14 @@ class ReceptiveFields(object):
 
 
 if __name__ == '__main__':
+    RF = ReceptiveFields(7)
+    print RF.response(np.array([1,2,1]))
+    RF.response(np.array([2,1,3]))
+    RF.plot_rfs()
+    pl.show()
+
+
+    '''
     R = RealToSpikes(10*np.random.rand(2,1000),7)
     R.RFs.plot_rfs()
     input = np.array([9,2])
@@ -176,4 +213,4 @@ if __name__ == '__main__':
     print spikes
     R.spike_raster(spikes)
     pl.show()
-
+    '''
