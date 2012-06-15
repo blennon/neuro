@@ -35,7 +35,7 @@ class RealToSpikes(object):
     
     '''
 
-    def __init__(self, data, num_RFs=10):
+    def __init__(self, num_RFs=10, data=None, online=True):
         '''
         Given the input data or large enough sample of it, set up
         the encoder.
@@ -47,8 +47,13 @@ class RealToSpikes(object):
         position in the array.
         '''
         self.num_RFs = num_RFs
-        self.RFs = ReceptiveFields(data, num_RFs)
-        self.n,self.m = data.shape
+        if data is None:
+            online = True
+            self.init = False
+        else:
+            self.n,self.m = data.shape
+            self.init = True
+        self.RFs = ReceptiveFields(num_RFs, data=data, online=online)
         
     def spikes(self, v, t, min_exc=.2):
         '''
@@ -63,10 +68,15 @@ class RealToSpikes(object):
         of a receptive field in order to register a spike.
         
         returns [(neuron_number,spike_time),...]
-        '''
+        '''  
         r = self.RFs.response(v)
+        if not self.init:
+            print 'Waiting for one more input to generate spikes...'
+            self.init = True
+            self.n = v.shape[0]
+            return []
         spike_times = self.linear_spike_times(r, t, min_exc)
-
+        
         return spike_times
     
     def linear_spike_times(self, rf, t, min_exc):
@@ -124,6 +134,7 @@ class ReceptiveFields(object):
             self.min,self.max = np.min(data,axis=1), np.max(data,axis=1)
             self.spread_RFs()
             self.online = online
+            self.init = True
         else:
             self.online = True
             self.init = False
@@ -197,20 +208,14 @@ class ReceptiveFields(object):
 
 
 if __name__ == '__main__':
-    RF = ReceptiveFields(7)
-    print RF.response(np.array([1,2,1]))
-    RF.response(np.array([2,1,3]))
-    RF.plot_rfs()
-    pl.show()
 
+    # Set up spike generator and input real valued arrays
+    R = RealToSpikes(7, data=None)
+    spikes = R.spikes(np.array([9.,2.]),5.0)
+    spikes = R.spikes(np.array([5.,3.]),5.0)
 
-    '''
-    R = RealToSpikes(10*np.random.rand(2,1000),7)
-    R.RFs.plot_rfs()
-    input = np.array([9,2])
-    print input
-    spikes = R.spikes(input,5.0)
-    print spikes
+    # Plot
     R.spike_raster(spikes)
+    R.RFs.plot_rfs()
     pl.show()
-    '''
+    
