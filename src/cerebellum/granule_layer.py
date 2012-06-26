@@ -14,14 +14,17 @@ class GranuleGolgi(IzhikevichGroup):
     
     Contains parameters defining the behavior of each cell type.
     
-    ===========================================================
+    =============================================================
     TO DO:
         1 neuron parameters: a,b,c,d to match physiology
         2 model AMPA, NMDA and GABA channels with different
-          time constants (conductances)
-        4 model topology with connection set algebra using 
+          time constants
+        3 model topology with connection set algebra using 
           python-csa
-    ===========================================================
+        
+        see [Buonomano and Mauk, 1994; Yamazaki and Tanaka, 2007]
+        for physiological parameters
+    =============================================================
     
     Buonomano and Mauk (1994) anatomical parameters:
     - 10000 GC, 900 GG, 500 MF, 1 PC
