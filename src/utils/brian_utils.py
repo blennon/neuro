@@ -17,16 +17,24 @@ class IzhikevichReset(object):
         Clamps membrane potential at reset value.
         '''
         spikes = P.LS.lastspikes()
-        if spikes == []:
+        if len(spikes) == 0:
             return
-        try:
-            # for the case that c,d are numpy arrays
-            P.v[spikes] = self.c[spikes]
-            P.u[spikes] += self.d[spikes]
-        except IndexError:
-            P.v[spikes] = self.c
-            P.u[spikes] += self.d
 
+        # ugly, but this takes care of multiple ways
+        # of instantiating neuron parameters c & d
+        try:
+            P.v[spikes] = P.c[spikes]
+            P.u[spikes] += P.d[spikes]
+        except IndexError:
+            P.v[spikes] = P.c
+            P.u[spikes] += P.d
+        except AttributeError:
+            try:
+                P.v[spikes] = self.c
+                P.u[spikes] += self.d
+            except IndexError:
+                P.v[spikes] = self.c[spikes]
+                P.u[spikes] += self.d[spikes]
 
 def random_weights_delays(n,m,p,max_weight,max_delay):
     '''
