@@ -16,11 +16,6 @@ def plot_Izhikevich(name,a,b,c,d):
                     du/dt = a*(b*v-u)                                    : volt/second
                     I                                                    : amp
                     ''')
-    reset = '''
-            v = c
-            u += d
-            '''
-
        
     G = NeuronGroup(1,eqs,threshold=threshold,reset=IzhikevichReset(c,d))
     
