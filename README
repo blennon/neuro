@@ -1,0 +1,1 @@
+This directory contains a subset of neurocomputing models/scripts/experiments I'm working on.  There are a number of files simulating spiking neurons or networks of neurons, primarily the Izhikevich spiking model.  I use the BRIAN Simulator extensively.
