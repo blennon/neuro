@@ -13,6 +13,7 @@ TO DO:
 from brian.library.IF import *
 from brian.neurongroup import *
 from brian import *
+from brian.experimental.realtime_monitor import RealtimeConnectionMonitor
 from scipy.sparse import rand as sprand
 from cortex import *
 from utils import *
@@ -35,8 +36,8 @@ N = Ne + Ni
 smax = 10 * mV        # max synapse strength
 tau_pre = 20*ms
 tau_post = 20*ms
-dA_pre = smax*.005
-dA_post = -dA_pre*1.05
+Ap = .1
+Am = -.1
 plot_on = True
 
 
@@ -69,8 +70,8 @@ w,d = random_weights_delays(Ni,Ne,.05,max_weight=-5.0*mV,max_delay=1*ms)
 Ci = DelayConnection(Gi,Ge,'gi', delay=d)
 Ci.connect(Gi,Ge,w)
 '''
-stdp = ExponentialSTDP(Ce, tau_pre, tau_post, dA_pre, dA_post, wmax=smax,
-                       clock=sim_clock)
+stdp = ExponentialSTDP(Ce, tau_pre, tau_post, Ap, Am, wmax=smax,
+                       clock=sim_clock, interactions='nearest')
 
 
 ########################################################################
@@ -94,6 +95,7 @@ Mvi = StateMonitor(Gi, 'v', record=[0,Ni-1], clock=mon_clock)
 MIi = StateMonitor(Gi, 'I', record=[0,Ni-1], clock=mon_clock)
 M = [Mse,Mve,MIe,Msi,Mvi,MIi]
 
+RT = RealtimeConnectionMonitor(Ce)
 
 ########################################################################
 # Plotting
@@ -127,7 +129,7 @@ def report_weights():
 ########################################################################
 # Run simulation
 ########################################################################
-net = Network(G,M,Ce,Ci,stdp,thalamic_input,report_weights)
+net = Network(G,M,Ce,Ci,stdp,thalamic_input,report_weights,RT)
 print 'network built. took %s seconds' % (time.time()-start)
 print 'running...'
 start = time.time()
