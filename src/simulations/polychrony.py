@@ -6,9 +6,10 @@ author: bill lennon
 date: 18 June 2012
 
 TO DO:
-    - Get STDP working properly.  Nearest spike learning only.
-    - Monitor synaptic weight changes
     - Find/track polychronous groups
+    
+RESULTS:
+    - Oscillatory behavior emerges after several minutes of simulation!
 '''
 from brian.library.IF import *
 from brian.neurongroup import *
@@ -133,7 +134,7 @@ net = Network(G,M,Ce,Ci,stdp,thalamic_input,report_weights,RT)
 print 'network built. took %s seconds' % (time.time()-start)
 print 'running...'
 start = time.time()
-net.run(20000*ms, report='text')
+net.run(200000*ms, report='text')
 print 'done. took %s seconds' % (time.time()-start)
 ioff()
 show()
