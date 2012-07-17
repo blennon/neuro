@@ -2,6 +2,8 @@ import numpy as np
 import pylab as pl
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.signal import *
+import Image
 
 def gabor(px_filt,px_wind,theta,psi,lamda=3*np.pi/2,gamma=(5./8.)):
     '''
@@ -35,7 +37,7 @@ def gabor(px_filt,px_wind,theta,psi,lamda=3*np.pi/2,gamma=(5./8.)):
     env = np.exp(-((X_theta/sigma_x)**2 + (Y_theta/sigma_y)**2))
     gb = env * np.cos(lamda*X_theta+psi)
     
-    return gb, X,Y#X_theta, Y_theta
+    return gb, X, Y
 
 def gabor_filterbank(n_ang,px_scales,px_width):
     '''
@@ -59,25 +61,52 @@ def gabor_filterbank(n_ang,px_scales,px_width):
     return fb
     
 if __name__ == "__main__":
+    '''testing and plotting of filters'''
+    
+    # filterbank parameters
     n_ang = 8 # number of angles
     px_scales = [2.,3.,5.,9.,15.,20.,35.] # filter width
     px_width = 36 # window width
     theta = np.linspace(0,np.pi,n_ang+1)[0:-1]
     phases = [0.,3*np.pi/2]
-    
-    fb = gabor_filterbank(n_ang,px_scales,px_width)
-    
-    canvas = np.zeros((len(px_scales) * px_width, n_ang * px_width))
-    i,j = 0,0
+       
+    # Plot gabor filterbank (generated separately)
+    canvas = np.zeros((len(px_scales) * px_width, n_ang * px_width * len(phases)))
+    i,j,k = 0,0,0
     for s in px_scales:
-        for w in theta:
-            Z,X,Y = gabor(s,px_width,w,3*np.pi/2)
-            canvas[i*px_width:i*px_width+px_width,j*px_width:j*px_width+px_width] = Z
-            j+=1
-        j=0
+        for p in phases:
+            for w in theta:
+                Z,X,Y = gabor(s,px_width,w,p)
+                canvas[i*px_width:i*px_width+px_width,(j+k*n_ang)*px_width:(j+k*n_ang)*px_width+px_width] = Z
+                j+=1
+            j=0
+            k+=1
+        k=0
         i+=1
     #fig = pl.figure()
     #ax = Axes3D(fig)
     #ax.plot_wireframe(X,Y,Z)
+    fig = pl.figure(0)
     pl.imshow(canvas,cmap=cm.gray)
+    pl.title('gabor filter bank')
+    
+    I = np.asarray(Image.open('/home/bill/python_packages/PIL/Images/lena.ppm'))
+    I = np.mean(I,axis=2) # gray scale
+    fig = pl.figure(1)
+    pl.imshow(I,cmap=cm.gray)
+    pl.title('test image, lena')
+    
+    # test generate fb
+    fb = gabor_filterbank(n_ang,px_scales,I.shape[0])
+    
+    fig = pl.figure(2)
+    n = fb.shape[2]
+    k = np.ceil(n**.5)
+    print k
+    for i in range(n):
+        pl.subplot(k,k,i)
+        I_f = fftconvolve(I,fb[:,:,i],mode='same')
+        pl.imshow(I_f,cmap=cm.gray)
+    pl.title('filtered by one gabor')
+    
     pl.show()
