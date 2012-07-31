@@ -64,7 +64,7 @@ if __name__ == "__main__":
     '''testing and plotting of filters'''
     
     # filterbank parameters
-    n_ang = 8 # number of angles
+    n_ang = 4 # number of angles
     px_scales = [2.,3.,5.,9.,15.,20.,35.] # filter width
     px_width = 36 # window width
     theta = np.linspace(0,np.pi,n_ang+1)[0:-1]
@@ -102,11 +102,13 @@ if __name__ == "__main__":
     fig = pl.figure(2)
     n = fb.shape[2]
     k = np.ceil(n**.5)
-    print k
+
     for i in range(n):
-        pl.subplot(k,k,i)
+        ax = pl.subplot(k,k,i)
         I_f = fftconvolve(I,fb[:,:,i],mode='same')
         pl.imshow(I_f,cmap=cm.gray)
-    pl.title('filtered by one gabor')
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+    fig.suptitle('filtered by one gabor')
     
     pl.show()

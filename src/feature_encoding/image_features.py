@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from gabor import *
 
 def image_grid(im_size,filt_size,n_pts):
     '''
-    given an image 'im' in numpy array format, return the coordinates of
+    given image size 'im_size', return the coordinates of
     n_pts (must be a square number) evenly spaced across the image with enough
     room left on edges for the filter
     
@@ -33,7 +34,8 @@ def feature_vector(im,grid_pt,fb):
     m,n,p = fb.shape
     a,b = np.ceil(m/2.), np.ceil(n/2.)
     i,j = grid_pt
-    return ((im[i-a:i+a,j-b:j+b,None]*fb).sum(axis=0).sum(axis=0))**.5
+
+    return (im[i-a:i+a,j-b:j+b,None]*fb).sum(axis=0).sum(axis=0)
 
 def image2features(im,fb,n_features):
     '''
@@ -42,19 +44,24 @@ def image2features(im,fb,n_features):
     n_features: number of feature vectors to extract (must be a square number)
     
     return feature vectors of an image at regularly spaced points on a
-    grid over the image
+    grid over the image in the form of an ndarray
     '''
-    if int(n_features ** .5)**2 != n_features:
+    k = n_features ** .5
+    if int(k)**2 != n_features:
         raise Exception('n_features must be a square number')
-    a,b,c = fb.shape
-    feat_vecs = {}
-    for pt in image_grid(im.shape,(a,b),n_features):
-        feat_vecs[pt] = feature_vector(im,pt,fb)
-    return feat_vecs    
+    filt_width,filt_height,n_filters = fb.shape
+    feat_array = np.zeros((k,k,n_filters))
+    i,j = 0,0
+    for pt in image_grid(im.shape,(filt_width,filt_height),n_features):
+        feat_array[i,j,:] = feature_vector(im,pt,fb)
+        i += 1
+        if i == k:
+            i,j = 0, j+1
+    return feat_array
     
     
 if __name__ == "__main__":
     im = np.zeros((128,128))   
-    fb = np.zeros((32,32,16))
-    fs = image2features(im,fb,16)
+    fb = np.zeros((32,32,3))
+    fs = image2features(im,fb,4)
     print fs

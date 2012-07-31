@@ -1,2 +1,3 @@
 from real_to_spike import *
-from gabor_features import *
+from gabor import *
+from image_features import *
